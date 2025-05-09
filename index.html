@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Mini Fazenda</title>
   <style>
     body {
@@ -14,7 +14,7 @@
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      height: 100vh;
+      height: 100%;
       justify-content: space-between;
     }
     h1 {
@@ -30,9 +30,10 @@
       grid-template-columns: repeat(4, 20vw);
       gap: 10px;
       justify-content: center;
-      padding: 10px;
+      margin-top: 10px;
       flex-grow: 1;
       overflow-y: auto;
+      padding: 10px;
     }
     .plot {
       position: relative;
@@ -50,11 +51,13 @@
       box-sizing: border-box;
     }
     .locked {
-      display: flex;
-      align-items: center;
-      justify-content: center;
       font-size: 1.2em;
       color: #888;
+      text-align: center;
+      line-height: 1.2;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
     .progress {
       position: absolute;
@@ -78,18 +81,13 @@
       text-align: center;
       color: #333;
     }
-    .buttons {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-      padding-bottom: 20px;
-    }
     button {
+      margin-top: 10px;
       padding: 12px 20px;
       font-size: 1.1em;
       width: 90%;
       max-width: 300px;
+      margin-bottom: 10px;
       background-color: #4CAF50;
       color: white;
       border: none;
@@ -117,12 +115,10 @@
   <h1>🌾 Mini Fazenda</h1>
   <p>Sementes: <span id="seeds">10</span> | Dinheiro: $<span id="money">0</span></p>
   <div class="grid" id="farm"></div>
-  <div class="buttons">
-    <button onclick="buySeed()">Comprar Semente ($1)</button>
-    <button onclick="resetGame()">🔁 Resetar Progresso</button>
-  </div>
+  <button onclick="buySeed()">Comprar Semente ($1)</button>
+  <button onclick="resetGame()">🔁 Resetar Progresso</button>
 
-  <div id="userName"></div>
+  <div id="userName">Usuário: carregando...</div>
 
   <script>
     const plotCount = 12;
@@ -165,6 +161,7 @@
 
     function createFarm() {
       farmEl.innerHTML = "";
+
       for (let i = 0; i < plotCount; i++) {
         const div = document.createElement("div");
         div.className = "plot";
@@ -174,41 +171,42 @@
 
         if (state === "locked") {
           div.classList.add("locked");
-          div.innerHTML = "🔒<span>$100</span>";
+          div.innerHTML = `<div><div style="font-size: 1.5em;">🔒</div><div style="font-size: 0.8em;">$100</div></div>`;
+        } else if (state === "growing") {
+          div.innerHTML = `<div style="font-size: 1.5em; line-height: 1; margin-top: -5px;">🌱</div>`;
+
+          const start = growTimestamps[i];
+          const elapsed = Date.now() - start;
+          const remaining = Math.max(0, growTime - elapsed);
+          const percent = 100 - Math.min(100, (elapsed / growTime) * 100);
+
+          const bar = document.createElement("div");
+          bar.className = "progress";
+          bar.innerHTML = `<div class="progress-bar" style="width:${percent}%"></div>`;
+          div.appendChild(bar);
+
+          const timeText = document.createElement("div");
+          timeText.className = "progress-text";
+          timeText.textContent = `${Math.ceil(remaining / 1000)}s`;
+          div.appendChild(timeText);
+
+          if (remaining <= 0) {
+            plotStates[i] = "ready";
+            growTimestamps[i] = null;
+            setTimeout(() => {
+              createFarm();
+              saveGame();
+            }, 100);
+          }
         } else {
           div.textContent = getPlotSymbol(state);
-
-          if (state === "growing") {
-            const start = growTimestamps[i];
-            const elapsed = Date.now() - start;
-            const remaining = Math.max(0, growTime - elapsed);
-            const percent = 100 - Math.min(100, (elapsed / growTime) * 100);
-
-            const bar = document.createElement("div");
-            bar.className = "progress";
-            bar.innerHTML = `<div class="progress-bar" style="width:${percent}%"></div>`;
-            div.appendChild(bar);
-
-            const timeText = document.createElement("div");
-            timeText.className = "progress-text";
-            timeText.textContent = `${Math.ceil(remaining / 1000)}s`;
-            div.appendChild(timeText);
-
-            if (remaining <= 0) {
-              plotStates[i] = "ready";
-              growTimestamps[i] = null;
-              setTimeout(() => {
-                createFarm();
-                saveGame();
-              }, 100);
-            }
-          }
         }
 
         farmEl.appendChild(div);
 
         div.addEventListener("click", () => {
           const state = plotStates[i];
+
           if (state === "locked") {
             if (money >= 100) {
               if (confirm("Desbloquear este terreno por $100?")) {
@@ -244,7 +242,7 @@
     }
 
     function getPlotSymbol(state) {
-      if (state === "growing") return "🌱";
+      if (state === "growing") return "";
       if (state === "ready") return "✨";
       return "+";
     }
@@ -268,10 +266,16 @@
     }
 
     function setTelegramUser() {
-      const user = Telegram.WebApp.initDataUnsafe?.user;
-      if (user) {
-        const name = user.username ? `@${user.username}` : user.first_name;
-        userNameEl.textContent = `Usuário: ${name}`;
+      if (window.Telegram && Telegram.WebApp) {
+        Telegram.WebApp.ready();
+        const user = Telegram.WebApp.initDataUnsafe?.user;
+        if (user && user.first_name) {
+          userNameEl.textContent = `Usuário: ${user.first_name}`;
+        } else {
+          userNameEl.textContent = "Usuário: não identificado";
+        }
+      } else {
+        userNameEl.textContent = "Usuário: (fora do Telegram)";
       }
     }
 
