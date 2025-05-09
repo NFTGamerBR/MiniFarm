@@ -10,21 +10,28 @@
       text-align: center;
       background: #f2ffe6;
       margin: 0;
-      padding: 20px;
+      padding: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
     }
     h1 {
-      font-size: 1.8em;
+      font-size: 1.6em;
+      margin-top: 10px;
     }
     p {
       font-size: 1.2em;
-      margin: 10px 0;
+      margin: 5px 0;
     }
     .grid {
       display: grid;
       grid-template-columns: repeat(4, 22vw);
       gap: 10px;
       justify-content: center;
-      margin-top: 20px;
+      margin-top: 10px;
+      flex-grow: 1;
+      overflow-y: auto;
     }
     .plot {
       position: relative;
@@ -69,11 +76,22 @@
       color: #333;
     }
     button {
-      margin-top: 20px;
+      margin-top: 10px;
       padding: 12px 20px;
       font-size: 1.1em;
       width: 90%;
       max-width: 300px;
+      margin-bottom: 20px;
+    }
+    #userName {
+      position: fixed;
+      top: 5px;
+      right: 10px;
+      background: #333;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-size: 1em;
     }
   </style>
 </head>
@@ -84,6 +102,8 @@
   <div class="grid" id="farm"></div>
   <button onclick="buySeed()">Comprar Semente ($1)</button>
   <button onclick="resetGame()">🔁 Resetar Progresso</button>
+
+  <div id="userName"></div> <!-- Exibição do nome do usuário do Telegram -->
 
   <script>
     const plotCount = 12;
@@ -97,6 +117,7 @@
     const seedsEl = document.getElementById("seeds");
     const moneyEl = document.getElementById("money");
     const farmEl = document.getElementById("farm");
+    const userNameEl = document.getElementById("userName");
 
     function updateUI() {
       seedsEl.textContent = seeds;
@@ -231,14 +252,24 @@
       }
     }
 
+    // Função para pegar o nome do usuário do Telegram e exibir no canto
+    function setTelegramUser() {
+      const user = Telegram.WebApp.initDataUnsafe?.user;
+      if (user && user.first_name) {
+        userNameEl.textContent = `Usuário: ${user.first_name}`;
+      }
+    }
+
     // Atualização de barras em tempo real
     setInterval(() => {
       createFarm();
     }, 1000);
 
+    // Inicialização
     loadGame();
     createFarm();
     updateUI();
+    setTelegramUser(); // Mostra o nome do usuário do Telegram
   </script>
 
 </body>
