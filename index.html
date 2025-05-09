@@ -5,63 +5,64 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Mini Fazenda</title>
   <style>
+    * {
+      box-sizing: border-box;
+    }
     body {
       font-family: sans-serif;
-      text-align: center;
       background: #f2ffe6;
       margin: 0;
       padding: 0;
       display: flex;
       flex-direction: column;
       height: 100vh;
+      overflow: hidden;
+    }
+
+    #userName {
+      background: #333;
+      color: white;
+      font-size: 0.9em;
+      padding: 4px 10px;
+      text-align: center;
     }
 
     h1 {
-      font-size: 1.6em;
-      margin-top: 5px;
+      font-size: 1.4em;
+      margin: 4px 0;
+      text-align: center;
     }
 
     .status {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      font-size: 1.1em;
-      margin: 5px 0;
-    }
-
-    .status span.emoji {
-      font-size: 1.2em;
+      font-size: 1em;
+      text-align: center;
+      margin-bottom: 5px;
     }
 
     .grid {
       display: grid;
-      grid-template-columns: repeat(4, 21vw);
-      gap: 10px;
-      justify-content: center;
-      flex-grow: 1;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      padding: 8px;
+      flex: 1;
       overflow-y: auto;
-      padding: 10px;
     }
 
     .plot {
-      position: relative;
-      width: 21vw;
-      height: 21vw;
-      border: 2px solid #888;
       background: #e0e0e0;
-      font-size: 1.5em;
+      border: 2px solid #888;
+      border-radius: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
-      cursor: pointer;
-      user-select: none;
-      border-radius: 8px;
+      font-size: 1.4em;
+      position: relative;
+      height: 20vw;
+      max-height: 100px;
     }
 
     .locked {
-      font-size: 1.2em;
-      color: #888;
+      font-size: 1em;
       flex-direction: column;
     }
 
@@ -69,7 +70,7 @@
       position: absolute;
       bottom: 0;
       left: 0;
-      height: 6px;
+      height: 5px;
       width: 100%;
       background: #ccc;
     }
@@ -83,58 +84,41 @@
     .progress-text {
       position: absolute;
       bottom: 8px;
-      font-size: 0.7em;
+      font-size: 0.65em;
       width: 100%;
       text-align: center;
-      color: #333;
     }
 
     .buttons {
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding-bottom: 15px;
+      padding: 8px;
     }
 
     button {
-      margin: 5px 0;
-      padding: 12px 20px;
-      font-size: 1em;
       width: 90%;
-      max-width: 300px;
-      background-color: #4CAF50;
+      max-width: 280px;
+      margin: 4px 0;
+      padding: 10px;
+      background: #4CAF50;
       color: white;
       border: none;
-      border-radius: 8px;
-      cursor: pointer;
+      border-radius: 6px;
+      font-size: 1em;
     }
 
     button:hover {
-      background-color: #45a049;
-    }
-
-    #userName {
-      position: fixed;
-      top: 5px;
-      right: 10px;
-      background: #333;
-      color: white;
-      padding: 5px 10px;
-      border-radius: 5px;
-      font-size: 0.95em;
-      z-index: 10;
+      background: #3e8e41;
     }
   </style>
 </head>
 <body>
 
   <div id="userName">Usuário: (carregando...)</div>
-
   <h1>🌾 Mini Fazenda</h1>
   <div class="status">
-    <span class="emoji">🌱</span> Sementes: <span id="seeds">10</span>
-    &nbsp;&nbsp;|&nbsp;&nbsp;
-    <span class="emoji">💰</span> Dinheiro: $<span id="money">0</span>
+    🌱 Sementes: <span id="seeds">10</span> | 💰 Dinheiro: $<span id="money">0</span>
   </div>
 
   <div class="grid" id="farm"></div>
@@ -146,16 +130,16 @@
 
   <script>
     const plotCount = 12;
+    const growTime = 10000;
     const initialUnlocked = 4;
-    const growTime = 10000; // 10 segundos
     let seeds = 10;
     let money = 0;
     let plotStates = Array(plotCount).fill("locked");
     let growTimestamps = Array(plotCount).fill(null);
 
+    const farmEl = document.getElementById("farm");
     const seedsEl = document.getElementById("seeds");
     const moneyEl = document.getElementById("money");
-    const farmEl = document.getElementById("farm");
     const userNameEl = document.getElementById("userName");
 
     function updateUI() {
@@ -164,57 +148,46 @@
     }
 
     function saveGame() {
-      const saveData = { seeds, money, plotStates, growTimestamps };
-      localStorage.setItem("farmGameSave", JSON.stringify(saveData));
+      localStorage.setItem("farmGameSave", JSON.stringify({ seeds, money, plotStates, growTimestamps }));
     }
 
     function loadGame() {
-      const save = localStorage.getItem("farmGameSave");
+      const save = JSON.parse(localStorage.getItem("farmGameSave"));
       if (save) {
-        const data = JSON.parse(save);
-        seeds = data.seeds ?? 10;
-        money = data.money ?? 0;
-        plotStates = data.plotStates ?? Array(plotCount).fill("locked");
-        growTimestamps = data.growTimestamps ?? Array(plotCount).fill(null);
+        seeds = save.seeds ?? 10;
+        money = save.money ?? 0;
+        plotStates = save.plotStates ?? Array(plotCount).fill("locked");
+        growTimestamps = save.growTimestamps ?? Array(plotCount).fill(null);
       } else {
-        for (let i = 0; i < initialUnlocked; i++) {
-          plotStates[i] = "empty";
-        }
+        for (let i = 0; i < initialUnlocked; i++) plotStates[i] = "empty";
       }
     }
 
     function createFarm() {
       farmEl.innerHTML = "";
-
       for (let i = 0; i < plotCount; i++) {
         const div = document.createElement("div");
         div.className = "plot";
         div.dataset.index = i;
         const state = plotStates[i];
-        div.dataset.state = state;
 
         if (state === "locked") {
           div.classList.add("locked");
           div.innerHTML = "🔒<br><small>$100</small>";
         } else {
           div.textContent = getPlotSymbol(state);
-
           if (state === "growing") {
-            const start = growTimestamps[i];
-            const elapsed = Date.now() - start;
+            const elapsed = Date.now() - growTimestamps[i];
             const remaining = Math.max(0, growTime - elapsed);
             const percent = 100 - Math.min(100, (elapsed / growTime) * 100);
-
             const bar = document.createElement("div");
             bar.className = "progress";
             bar.innerHTML = `<div class="progress-bar" style="width:${percent}%"></div>`;
+            const txt = document.createElement("div");
+            txt.className = "progress-text";
+            txt.textContent = `${Math.ceil(remaining / 1000)}s`;
             div.appendChild(bar);
-
-            const timeText = document.createElement("div");
-            timeText.className = "progress-text";
-            timeText.textContent = `${Math.ceil(remaining / 1000)}s`;
-            div.appendChild(timeText);
-
+            div.appendChild(txt);
             if (remaining <= 0) {
               plotStates[i] = "ready";
               growTimestamps[i] = null;
@@ -225,94 +198,80 @@
             }
           }
         }
-
         div.addEventListener("click", () => handlePlotClick(i));
         farmEl.appendChild(div);
       }
     }
 
     function getPlotSymbol(state) {
-      if (state === "growing") return "🌱";
-      if (state === "ready") return "✨";
-      return "+";
+      return state === "growing" ? "🌱" : state === "ready" ? "✨" : "+";
     }
 
     function handlePlotClick(i) {
       const state = plotStates[i];
-
       if (state === "locked") {
-        if (money >= 100) {
-          if (confirm("Desbloquear este terreno por $100?")) {
-            money -= 100;
-            plotStates[i] = "empty";
-            updateUI();
-            createFarm();
-            saveGame();
-          }
+        if (money >= 100 && confirm("Desbloquear por $100?")) {
+          money -= 100;
+          plotStates[i] = "empty";
         } else {
           alert("Dinheiro insuficiente!");
         }
-
       } else if (state === "empty") {
         if (seeds > 0) {
           seeds--;
           plotStates[i] = "growing";
           growTimestamps[i] = Date.now();
-          updateUI();
-          createFarm();
-          saveGame();
         } else {
           alert("Sem sementes!");
         }
-
       } else if (state === "ready") {
         money += 10;
         plotStates[i] = "empty";
-        updateUI();
-        createFarm();
-        saveGame();
       }
+      updateUI();
+      createFarm();
+      saveGame();
     }
 
     function buySeed() {
       if (money >= 1) {
-        money -= 1;
-        seeds += 1;
+        money--; seeds++;
         updateUI();
         saveGame();
-      } else {
-        alert("Dinheiro insuficiente!");
-      }
+      } else alert("Dinheiro insuficiente!");
     }
 
     function resetGame() {
-      if (confirm("Tem certeza que deseja resetar o jogo?")) {
+      if (confirm("Resetar jogo?")) {
         localStorage.removeItem("farmGameSave");
         location.reload();
       }
     }
 
     function setTelegramUser() {
-      Telegram.WebApp.ready();
-      Telegram.WebApp.expand();
-      Telegram.WebApp.requestWriteAccess();
+      try {
+        Telegram.WebApp.ready();
+        Telegram.WebApp.expand();
+        const unsafe = Telegram.WebApp.initDataUnsafe;
+        console.log("Telegram initDataUnsafe:", unsafe);
 
-      const user = Telegram.WebApp.initDataUnsafe?.user;
-      console.log("initDataUnsafe:", Telegram.WebApp.initDataUnsafe);
-
-      if (user && (user.username || user.first_name)) {
-        userNameEl.textContent = `Usuário: ${user.username ? "@" + user.username : user.first_name}`;
-      } else {
-        userNameEl.textContent = "Usuário: não identificado";
+        if (unsafe && unsafe.user) {
+          const user = unsafe.user;
+          userNameEl.textContent = "Usuário: " + (user.username ? "@" + user.username : user.first_name);
+        } else {
+          userNameEl.textContent = "Usuário: não identificado";
+        }
+      } catch (e) {
+        console.error("Telegram error:", e);
+        userNameEl.textContent = "Usuário: (erro ao carregar)";
       }
     }
-
-    setInterval(() => createFarm(), 1000);
 
     loadGame();
     createFarm();
     updateUI();
     setTelegramUser();
+    setInterval(createFarm, 1000);
   </script>
 </body>
 </html>
