@@ -15,6 +15,7 @@
       display: flex;
       flex-direction: column;
       height: 100%;
+      justify-content: space-between; /* Ajusta para que os elementos se distribuam corretamente */
     }
     h1 {
       font-size: 1.6em;
@@ -26,7 +27,7 @@
     }
     .grid {
       display: grid;
-      grid-template-columns: repeat(4, 22vw);
+      grid-template-columns: repeat(4, 22vw); /* Ajuste para garantir que os plots fiquem visíveis */
       gap: 10px;
       justify-content: center;
       margin-top: 10px;
@@ -45,6 +46,7 @@
       justify-content: center;
       cursor: pointer;
       user-select: none;
+      margin: 0 auto; /* Garante que os plots fiquem centralizados */
     }
     .locked {
       display: flex;
@@ -82,6 +84,14 @@
       width: 90%;
       max-width: 300px;
       margin-bottom: 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
     }
     #userName {
       position: fixed;
@@ -92,6 +102,7 @@
       padding: 5px 10px;
       border-radius: 5px;
       font-size: 1em;
+      z-index: 10; /* Garante que o nome do usuário fique sobre outros elementos */
     }
   </style>
 </head>
@@ -267,10 +278,8 @@
 
     // Inicialização
     loadGame();
-    createFarm();
-    updateUI();
-    setTelegramUser(); // Mostra o nome do usuário do Telegram
-  </script>
 
-</body>
-</html>
+createFarm();
+updateUI();
+setTelegramUser();
+</script> </body> </html>
