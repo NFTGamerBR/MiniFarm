@@ -1,85 +1,77 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt">
 <head>
-  <title>Mini Fazenda</title>
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mini Fazenda</title>
   <style>
-    * {
-      box-sizing: border-box;
-    }
     body {
       font-family: sans-serif;
       text-align: center;
       background: #f2ffe6;
       margin: 0;
-      padding: 10px;
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
+      padding: 20px;
     }
-
     h1 {
-      font-size: 1.5em;
-      margin-bottom: 0;
+      font-size: 1.8em;
     }
-
     p {
-      font-size: 1em;
-      margin: 5px 0 15px;
+      font-size: 1.2em;
+      margin: 10px 0;
     }
-
     .grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      width: 100%;
-      max-width: 600px;
-      margin: 0 auto;
+      grid-template-columns: repeat(4, 22vw);
+      gap: 10px;
+      justify-content: center;
+      margin-top: 20px;
     }
-
     .plot {
       position: relative;
-      width: 100%;
-      aspect-ratio: 1 / 1;
+      width: 22vw;
+      height: 22vw;
       border: 2px solid #888;
       background: #e0e0e0;
-      font-size: 1.4em;
+      font-size: 2em;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
       user-select: none;
     }
-
     .locked {
-      background: repeating-linear-gradient(
-        45deg,
-        #ccc,
-        #ccc 10px,
-        #eee 10px,
-        #eee 20px
-      );
-      color: #555;
-      font-size: 1em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2em;
+      color: #888;
     }
-
-    .locked span {
+    .progress {
       position: absolute;
-      bottom: 4px;
+      bottom: 0;
+      left: 0;
+      height: 6px;
       width: 100%;
+      background: #ccc;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(to left, #76c043, #4c9a2a);
+      transition: width 1s linear;
+    }
+    .progress-text {
+      position: absolute;
+      bottom: 8px;
       font-size: 0.7em;
+      width: 100%;
+      text-align: center;
       color: #333;
     }
-
-    .buttons {
-      margin-top: auto;
-      padding: 15px 0;
-    }
-
     button {
-      margin: 5px;
+      margin-top: 20px;
       padding: 12px 20px;
-      font-size: 1em;
+      font-size: 1.1em;
       width: 90%;
       max-width: 300px;
     }
@@ -89,20 +81,18 @@
 
   <h1>🌾 Mini Fazenda</h1>
   <p>Sementes: <span id="seeds">10</span> | Dinheiro: $<span id="money">0</span></p>
-
   <div class="grid" id="farm"></div>
-
-  <div class="buttons">
-    <button onclick="buySeed()">🌱 Comprar Semente ($1)</button>
-    <button onclick="resetGame()">🔁 Resetar Progresso</button>
-  </div>
+  <button onclick="buySeed()">Comprar Semente ($1)</button>
+  <button onclick="resetGame()">🔁 Resetar Progresso</button>
 
   <script>
     const plotCount = 12;
     const initialUnlocked = 4;
+    const growTime = 10000; // 10 segundos
     let seeds = 10;
     let money = 0;
     let plotStates = Array(plotCount).fill("locked");
+    let growTimestamps = Array(plotCount).fill(null); // timestamps para barra
 
     const seedsEl = document.getElementById("seeds");
     const moneyEl = document.getElementById("money");
@@ -114,7 +104,7 @@
     }
 
     function saveGame() {
-      const saveData = { seeds, money, plotStates };
+      const saveData = { seeds, money, plotStates, growTimestamps };
       localStorage.setItem("farmGameSave", JSON.stringify(saveData));
     }
 
@@ -125,6 +115,7 @@
         seeds = data.seeds ?? 10;
         money = data.money ?? 0;
         plotStates = data.plotStates ?? Array(plotCount).fill("locked");
+        growTimestamps = data.growTimestamps ?? Array(plotCount).fill(null);
       } else {
         for (let i = 0; i < initialUnlocked; i++) {
           plotStates[i] = "empty";
@@ -132,24 +123,13 @@
       }
     }
 
-    function buySeed() {
-      if (money >= 1) {
-        money -= 1;
-        seeds += 1;
-        updateUI();
-        saveGame();
-      } else {
-        alert("Dinheiro insuficiente!");
-      }
-    }
-
     function createFarm() {
       farmEl.innerHTML = "";
+
       for (let i = 0; i < plotCount; i++) {
         const div = document.createElement("div");
         div.className = "plot";
         div.dataset.index = i;
-
         const state = plotStates[i];
         div.dataset.state = state;
 
@@ -158,11 +138,36 @@
           div.innerHTML = "🔒<span>$100</span>";
         } else {
           div.textContent = getPlotSymbol(state);
+
+          if (state === "growing") {
+            const start = growTimestamps[i];
+            const elapsed = Date.now() - start;
+            const remaining = Math.max(0, growTime - elapsed);
+            const percent = 100 - Math.min(100, (elapsed / growTime) * 100);
+
+            const bar = document.createElement("div");
+            bar.className = "progress";
+            bar.innerHTML = `<div class="progress-bar" style="width:${percent}%"></div>`;
+            div.appendChild(bar);
+
+            const timeText = document.createElement("div");
+            timeText.className = "progress-text";
+            timeText.textContent = `${Math.ceil(remaining / 1000)}s`;
+            div.appendChild(timeText);
+
+            if (remaining <= 0) {
+              plotStates[i] = "ready";
+              growTimestamps[i] = null;
+              setTimeout(() => {
+                createFarm();
+                saveGame();
+              }, 100); // pequeno delay
+            }
+          }
         }
 
         farmEl.appendChild(div);
 
-        // Event listener
         div.addEventListener("click", () => {
           const state = plotStates[i];
 
@@ -176,22 +181,17 @@
                 saveGame();
               }
             } else {
-              alert("Dinheiro insuficiente para desbloquear!");
+              alert("Dinheiro insuficiente!");
             }
 
           } else if (state === "empty") {
             if (seeds > 0) {
               seeds--;
               plotStates[i] = "growing";
+              growTimestamps[i] = Date.now();
               updateUI();
               createFarm();
               saveGame();
-
-              setTimeout(() => {
-                plotStates[i] = "ready";
-                createFarm();
-                saveGame();
-              }, 10000);
             } else {
               alert("Sem sementes!");
             }
@@ -213,12 +213,28 @@
       return "+";
     }
 
+    function buySeed() {
+      if (money >= 1) {
+        money -= 1;
+        seeds += 1;
+        updateUI();
+        saveGame();
+      } else {
+        alert("Dinheiro insuficiente!");
+      }
+    }
+
     function resetGame() {
       if (confirm("Tem certeza que deseja resetar o jogo?")) {
         localStorage.removeItem("farmGameSave");
         location.reload();
       }
     }
+
+    // Atualização de barras em tempo real
+    setInterval(() => {
+      createFarm();
+    }, 1000);
 
     loadGame();
     createFarm();
