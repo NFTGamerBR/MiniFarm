@@ -15,7 +15,6 @@
       display: flex;
       flex-direction: column;
       height: 100%;
-      justify-content: space-between;
     }
     h1 {
       font-size: 1.6em;
@@ -81,13 +80,18 @@
       text-align: center;
       color: #333;
     }
+    .buttons {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
     button {
-      margin-top: 10px;
       padding: 12px 20px;
       font-size: 1.1em;
       width: 90%;
       max-width: 300px;
-      margin-bottom: 10px;
       background-color: #4CAF50;
       color: white;
       border: none;
@@ -115,8 +119,11 @@
   <h1>🌾 Mini Fazenda</h1>
   <p>Sementes: <span id="seeds">10</span> | Dinheiro: $<span id="money">0</span></p>
   <div class="grid" id="farm"></div>
-  <button onclick="buySeed()">Comprar Semente ($1)</button>
-  <button onclick="resetGame()">🔁 Resetar Progresso</button>
+
+  <div class="buttons">
+    <button onclick="buySeed()">Comprar Semente ($1)</button>
+    <button onclick="resetGame()">🔁 Resetar Progresso</button>
+  </div>
 
   <div id="userName">Usuário: carregando...</div>
 
@@ -268,8 +275,11 @@
     function setTelegramUser() {
       if (window.Telegram && Telegram.WebApp) {
         Telegram.WebApp.ready();
+        Telegram.WebApp.expand();
         const user = Telegram.WebApp.initDataUnsafe?.user;
-        if (user && user.first_name) {
+        if (user?.username) {
+          userNameEl.textContent = `Usuário: @${user.username}`;
+        } else if (user?.first_name) {
           userNameEl.textContent = `Usuário: ${user.first_name}`;
         } else {
           userNameEl.textContent = "Usuário: não identificado";
